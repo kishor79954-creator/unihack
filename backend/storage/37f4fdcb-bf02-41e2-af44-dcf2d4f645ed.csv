@@ -1,0 +1,4 @@
+name,sku,manufacturer,category,description,Frequency,Impedance,Battery
+Sony WH-1000XM5,SONY-XM5,Sony,Audio,Flagship ANC headphones,4Hz-40kHz,48 Ohm,30 Hours
+Bose QC Ultra,BOSE-QCU,Bose,Audio,Spatial audio ANC headphones,20Hz-20kHz,32 Ohm,24 Hours
+Apple AirPods Max,APPL-APM,Apple,Audio,High-fidelity headphones,20Hz-20kHz,32 Ohm,20 Hours

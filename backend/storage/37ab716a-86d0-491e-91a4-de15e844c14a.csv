@@ -1,0 +1,5 @@
+name,sku,manufacturer,category,description,Max Flow Rate,Head Pressure,Motor Power,Impeller Material
+Grundfos CR 15-3,GRUND-CR15,Grundfos,Industrial Pumps,Vertical multistage centrifugal inline pump,15 m3/h,45 m,3.0 kW,Stainless Steel 316
+Flowserve Mark 3 ANSI,FLOW-MK3-ANSI,Flowserve,Industrial Pumps,High performance chemical process pump,50 m3/h,95 m,11.0 kW,Duplex Alloy 2205
+Wilo Stratos MAXO 30,WILO-STRATOS,Wilo,Industrial Pumps,Smart glandless circulator pump,12 m3/h,14 m,0.75 kW,Composite PPE
+Sulzer AHLSTAR N,SULZER-AHL-N,Sulzer,Industrial Pumps,Heavy duty single-stage centrifugal slurry pump,120 m3/h,110 m,45.0 kW,Chromium Iron

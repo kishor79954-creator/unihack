@@ -1,0 +1,4 @@
+name,sku,manufacturer,category,description,Voltage,Weight
+Industrial Motor M1,MOT-M1,Siemens,Motors,High efficiency 3-phase motor,400V,18kg
+Centrifugal Pump P1,PUMP-P1,Grundfos,Pumps,Stainless steel inline pump,230V,12kg
+Industrial Sensor S1,SENS-S1,Omron,Sensors,Photoelectric retroreflective sensor,24V,0.2kg

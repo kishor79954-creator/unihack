@@ -1,0 +1,6 @@
+name,sku,manufacturer,category,description,Frequency Response,Impedance,Battery Life,Bluetooth Version,Noise Cancellation
+Sony WH-1000XM5,SONY-WH1000XM5,Sony,Audio Equipment,Flagship wireless noise cancelling headphones with Auto NC Optimizer,4 Hz - 40000 Hz,48 Ohm,30 Hours,5.2,Active Noise Cancellation
+Bose QuietComfort Ultra,BOSE-QCU-01,Bose,Audio Equipment,Spatial audio wireless noise cancelling headphones,20 Hz - 20000 Hz,32 Ohm,24 Hours,5.3,Active Noise Cancellation
+Apple AirPods Max,APPL-APM-01,Apple,Audio Equipment,High-fidelity audio headphones with dynamic driver,20 Hz - 20000 Hz,32 Ohm,20 Hours,5.0,Active Noise Cancellation
+Sennheiser Momentum 4,SENN-M4-01,Sennheiser,Audio Equipment,Audiophile-inspired 42mm transducer system headphones,6 Hz - 22000 Hz,60 Ohm,60 Hours,5.2,Adaptive Hybrid ANC
+Audio-Technica ATH-M50xBT2,AT-M50X-BT2,Audio-Technica,Audio Equipment,Professional studio monitor wireless headphones,15 Hz - 28000 Hz,38 Ohm,50 Hours,5.0,Passive Isolation

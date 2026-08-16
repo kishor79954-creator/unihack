@@ -1,0 +1,92 @@
+[
+  {
+    "TEST ID": "API-01",
+    "CATEGORY": "OBSERVABILITY",
+    "TEST": "Liveness Check",
+    "EXPECTED": "HTTP 200",
+    "ACTUAL": "HTTP 200",
+    "STATUS": "PASS",
+    "EVIDENCE": "Status Code: 200 | Response: {'status': 'alive'}...",
+    "NOTES": ""
+  },
+  {
+    "TEST ID": "API-02",
+    "CATEGORY": "OBSERVABILITY",
+    "TEST": "Readiness Check",
+    "EXPECTED": "HTTP 200",
+    "ACTUAL": "HTTP 200",
+    "STATUS": "PASS",
+    "EVIDENCE": "Status Code: 200 | Response: {'status': 'ready'}...",
+    "NOTES": ""
+  },
+  {
+    "TEST ID": "API-03",
+    "CATEGORY": "OBSERVABILITY",
+    "TEST": "System Health",
+    "EXPECTED": "HTTP 200",
+    "ACTUAL": "HTTP 200",
+    "STATUS": "PASS",
+    "EVIDENCE": "Status Code: 200 | Response: {'overall': 'HEALTHY', 'database': 'HEALTHY', 'ai_provider': 'HEALTHY', 'vector_search': 'HEALTHY', ...",
+    "NOTES": ""
+  },
+  {
+    "TEST ID": "API-04",
+    "CATEGORY": "PRODUCTS",
+    "TEST": "Get Products List",
+    "EXPECTED": "HTTP 200",
+    "ACTUAL": "HTTP 200",
+    "STATUS": "PASS",
+    "EVIDENCE": "Status Code: 200 | Response: [{'id': 1, 'completeness_score': 75.0, 'name': 'SKF 6205-2RS Deep Groove Ball Bearing', 'ai_confiden...",
+    "NOTES": ""
+  },
+  {
+    "TEST ID": "API-05",
+    "CATEGORY": "PRODUCTS",
+    "TEST": "Get Product 1",
+    "EXPECTED": "HTTP 200",
+    "ACTUAL": "HTTP 200",
+    "STATUS": "PASS",
+    "EVIDENCE": "Status Code: 200 | Response: {'id': 1, 'completeness_score': 75.0, 'name': 'SKF 6205-2RS Deep Groove Ball Bearing', 'ai_confidenc...",
+    "NOTES": ""
+  },
+  {
+    "TEST ID": "API-06",
+    "CATEGORY": "DOCUMENTS",
+    "TEST": "Upload missing file",
+    "EXPECTED": "HTTP 422",
+    "ACTUAL": "HTTP 422",
+    "STATUS": "PASS",
+    "EVIDENCE": "Status Code: 422",
+    "NOTES": ""
+  },
+  {
+    "TEST ID": "API-07",
+    "CATEGORY": "ENRICHMENT",
+    "TEST": "Analyze gaps",
+    "EXPECTED": "HTTP 200",
+    "ACTUAL": "HTTP 200",
+    "STATUS": "PASS",
+    "EVIDENCE": "Status Code: 200 | Response: {'opportunities': [{'id': 'opp-001', 'type': 'MISSING_ATTRIBUTE', 'attribute': 'Bore Diameter', 'cur...",
+    "NOTES": ""
+  },
+  {
+    "TEST ID": "API-08",
+    "CATEGORY": "AI",
+    "TEST": "Empty Chat Query",
+    "EXPECTED": "HTTP 422",
+    "ACTUAL": "HTTP 422",
+    "STATUS": "PASS",
+    "EVIDENCE": "Status Code: 422",
+    "NOTES": ""
+  },
+  {
+    "TEST ID": "API-09",
+    "CATEGORY": "PUBLISHING",
+    "TEST": "Publish Product",
+    "EXPECTED": "HTTP 200",
+    "ACTUAL": "HTTP 200",
+    "STATUS": "PASS",
+    "EVIDENCE": "Status Code: 200 | Response: {'status': 'PUBLISHED', 'message': 'Product successfully published.'}...",
+    "NOTES": ""
+  }
+]
