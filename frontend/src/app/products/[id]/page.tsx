@@ -11,6 +11,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { AttributeDrawer } from "@/components/ui/AttributeDrawer";
 import { EvidenceDrawer } from "@/components/ui/EvidenceDrawer";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function ProductWorkspacePage() {
   const params = useParams();
@@ -24,7 +25,7 @@ export default function ProductWorkspacePage() {
 
   const fetchProduct = () => {
     setLoading(true);
-    fetch(`http://localhost:8000/api/products/${params.id}`)
+    fetch(`${API_BASE_URL}/api/products/${params.id}`)
       .then((res) => res.json())
       .then((data) => {
         setProduct(data);

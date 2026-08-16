@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { clsx } from "clsx";
 import { formatDistanceToNow } from "date-fns";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function ReviewWorkspace() {
   const { id } = useParams();
@@ -20,7 +21,7 @@ export default function ReviewWorkspace() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch(`http://localhost:8000/api/reviews/${id}`)
+    fetch(`${API_BASE_URL}/api/reviews/${id}`)
       .then(res => res.json())
       .then(data => {
         setIssue(data);
@@ -39,7 +40,7 @@ export default function ReviewWorkspace() {
     setSubmitting(true);
     
     try {
-      const res = await fetch(`http://localhost:8000/api/reviews/${id}/resolve`, {
+      const res = await fetch(`${API_BASE_URL}/api/reviews/${id}/resolve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
