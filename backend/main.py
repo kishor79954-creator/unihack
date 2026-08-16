@@ -31,7 +31,7 @@ doc_ai = DocumentAI(api_key=os.getenv("AI_API_KEY", ""))
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Next.js frontend
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
