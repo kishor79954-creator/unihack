@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Upload, FileText, CheckCircle2, RefreshCw, Sparkles, ArrowRight, Trash2, Check, AlertCircle, Plus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { API_BASE_URL } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 interface DocumentStreamItem {
   id: string;
@@ -28,7 +28,7 @@ export default function IngestionPage() {
 
   // Fetch real uploaded sources from backend on load
   const fetchSources = () => {
-    fetch(`${API_BASE_URL}/api/products`)
+    apiFetch("/api/products")
       .then((res) => res.json())
       .then((products) => {
         if (Array.isArray(products) && products.length > 0) {
@@ -56,7 +56,7 @@ export default function IngestionPage() {
   const handleClearDemoData = async () => {
     if (!confirm("Are you sure you want to delete all catalog data and reset the database?")) return;
     try {
-      await fetch(`${API_BASE_URL}/api/reset`, { method: "POST" });
+      await apiFetch("/api/reset", { method: "POST" });
       setDocumentStream([]);
       setNotification({
         type: "success",
@@ -86,13 +86,13 @@ export default function IngestionPage() {
     try {
       // If user selected Replace mode, wipe previous catalog first
       if (importMode === "replace") {
-        await fetch(`${API_BASE_URL}/api/reset`, { method: "POST" });
+        await apiFetch("/api/reset", { method: "POST" });
       }
 
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch(`${API_BASE_URL}/api/products/upload`, {
+      const res = await apiFetch("/api/products/upload", {
         method: "POST",
         body: formData,
       });

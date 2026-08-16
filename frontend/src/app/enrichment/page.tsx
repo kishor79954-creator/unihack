@@ -9,7 +9,7 @@ import {
 import { AppShell } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EvidenceDrawer } from "@/components/ui/EvidenceDrawer";
-import { API_BASE_URL } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 export default function EnrichmentWorkspacePage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -21,7 +21,7 @@ export default function EnrichmentWorkspacePage() {
   const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/products`)
+    apiFetch("/api/products")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -38,7 +38,7 @@ export default function EnrichmentWorkspacePage() {
 
   const runAnalysis = (pId: number) => {
     setLoading(true);
-    fetch(`${API_BASE_URL}/api/enrichment/analyze/${pId}`)
+    apiFetch(`/api/enrichment/analyze/${pId}`)
       .then((res) => res.json())
       .then((data) => {
         setOpportunities(data.opportunities || []);

@@ -223,30 +223,31 @@ class AICopilot:
         if not questions:
             questions = self._deterministic_product_suggestions(profile)
 
-        response = {
+
+        # High quality product-aware questions based on extracted data
+        questions = self._generate_rule_based_questions(profile)
+        
+        result = {
             "product_id": product.id,
             "product_name": product.name,
-            "category": product.category,
-            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "questions": questions,
             "profile_summary": {
-                "attributes_count": len(profile["normalized_attributes"]),
-                "evidence_count": profile["evidence_count"],
-                "sources_count": len(profile["sources"]),
-                "conflicts_count": len(profile["open_issues"]),
-                "missing_count": len(profile["missing_fields"])
-            }
+                "total_attributes": len(profile.get("raw_attributes", [])),
+                "total_sources": len(profile.get("sources", [])),
+                "open_issues": len(profile.get("open_issues", [])),
+                "missing_fields": len(profile.get("missing_fields", []))
+            },
+            "questions": questions
         }
+        
+        self._suggestions_cache[cache_key] = result
+        return result
 
-        self._suggestions_cache[cache_key] = response
-        return response
-
-    def _deterministic_product_suggestions(self, profile: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Intelligent deterministic fallback generator that produces 100% product-aware questions."""
+    def _generate_rule_based_questions(self, profile: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generates crisp, highly relevant questions dynamically from verified profile attributes."""
         questions = []
         name = profile.get("name", "Product")
         sku = profile.get("sku", "")
-        category = profile.get("category", "")
+        category = profile.get("category", "Equipment")
         attrs = profile.get("normalized_attributes", [])
         issues = profile.get("open_issues", [])
         missing = profile.get("missing_fields", [])
@@ -302,7 +303,7 @@ class AICopilot:
 
         return questions[:5]
 
-    def chat(self, query: str, context: str, db=None):
+    def chat(self, query: str, context: str, db=None, workspace_id: str = "default"):
         """Conversational RAG assistant deeply grounded in active SQLite product profile with zero hallucination."""
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
@@ -320,7 +321,7 @@ class AICopilot:
                 try:
                     product_id = int(context.split("_")[1])
                     from models import Product
-                    product = db.query(Product).filter(Product.id == product_id).first()
+                    product = db.query(Product).filter(Product.id == product_id, Product.workspace_id == workspace_id).first()
                     if product:
                         active_profile = self.build_product_profile(product, db)
                         attr_lines = [f"- {a['label']}: {a['value']} (Confidence: {a['confidence']}%)" for a in active_profile["normalized_attributes"]]
@@ -328,14 +329,12 @@ class AICopilot:
                         
                         db_context = f"""
                         SELECTED PRODUCT INTELLIGENCE PROFILE:
-                        - ID: {active_profile['id']}
-                        - Product Name: {active_profile['name']}
-                        - SKU / Part Number: {active_profile['sku']}
-                        - Category: {active_profile['category']}
-                        - Manufacturer: {active_profile['manufacturer']}
-                        - Description: {active_profile['description']}
-                        - Quality Score: {active_profile['quality_score']}%
-                        - Status: {active_profile['status']}
+                        Product Name: {active_profile['name']}
+                        SKU: {active_profile['sku']}
+                        Manufacturer: {active_profile['manufacturer']}
+                        Category: {active_profile['category']}
+                        Quality Score: {active_profile['quality_score']}%
+                        Description: {active_profile['description'] or 'No verified commercial description on record.'}
                         
                         VERIFIED ATTRIBUTES IN DATABASE:
                         {chr(10).join(attr_lines) if attr_lines else "No verified attributes on record."}
@@ -355,7 +354,7 @@ class AICopilot:
             elif db and (context == "catalog" or not context):
                 try:
                     from models import Product
-                    products = db.query(Product).limit(25).all()
+                    products = db.query(Product).filter(Product.workspace_id == workspace_id).limit(25).all()
                     if products:
                         db_context = f"ACTIVE CATALOG ({len(products)} products in SQLite):\n" + "\n".join([f"- {p.name} (SKU: {p.sku}, Category: {p.category}, Manufacturer: {p.manufacturer})" for p in products]) + "\n"
                     else:

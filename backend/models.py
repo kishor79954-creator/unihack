@@ -66,7 +66,8 @@ class Product(Base):
     __tablename__ = "products"
     
     id = Column(Integer, primary_key=True, index=True)
-    sku = Column(String, unique=True, index=True)
+    workspace_id = Column(String, default="default", index=True)
+    sku = Column(String, index=True)
     name = Column(String, index=True)
     description = Column(String)
     manufacturer = Column(String, index=True)
@@ -99,6 +100,7 @@ class Source(Base):
     __tablename__ = "sources"
     
     id = Column(Integer, primary_key=True, index=True)
+    workspace_id = Column(String, default="default", index=True)
     product_id = Column(Integer, ForeignKey("products.id"))
     
     source_type = Column(Enum(SourceType))
@@ -168,6 +170,7 @@ class ReviewIssue(Base):
     __tablename__ = "review_issues"
     
     id = Column(Integer, primary_key=True, index=True)
+    workspace_id = Column(String, default="default", index=True)
     product_id = Column(Integer, ForeignKey("products.id"))
     
     issue_type = Column(Enum(IssueType))
@@ -195,6 +198,7 @@ class AuditEvent(Base):
     __tablename__ = "audit_events"
     
     id = Column(Integer, primary_key=True, index=True)
+    workspace_id = Column(String, default="default", index=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
     
     actor = Column(String) # "System", "AI", or User Name
@@ -244,6 +248,7 @@ class GraphEdgeType(enum.Enum):
 class GraphNode(Base):
     __tablename__ = "graph_nodes"
     id = Column(String, primary_key=True, index=True) # E.g., "PROD_1", "MFG_SKF"
+    workspace_id = Column(String, default="default", index=True)
     node_type = Column(Enum(GraphNodeType))
     name = Column(String, index=True)
     properties = Column(JSON, nullable=True)
@@ -251,6 +256,7 @@ class GraphNode(Base):
 class GraphEdge(Base):
     __tablename__ = "graph_edges"
     id = Column(Integer, primary_key=True, index=True)
+    workspace_id = Column(String, default="default", index=True)
     source_id = Column(String, ForeignKey("graph_nodes.id"))
     target_id = Column(String, ForeignKey("graph_nodes.id"))
     relationship_type = Column(Enum(GraphEdgeType))

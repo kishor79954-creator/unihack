@@ -10,7 +10,7 @@ import {
 import { AppShell } from "@/components/layout/AppShell";
 import { KPICard } from "@/components/ui/KPICard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { API_BASE_URL } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -31,10 +31,10 @@ export default function DashboardPage() {
     setLoading(true);
     try {
       const [statsRes, productsRes, reviewsRes, auditRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/stats`),
-        fetch(`${API_BASE_URL}/api/products`),
-        fetch(`${API_BASE_URL}/api/reviews`),
-        fetch(`${API_BASE_URL}/api/audit-events`)
+        apiFetch("/api/stats"),
+        apiFetch("/api/products"),
+        apiFetch("/api/reviews"),
+        apiFetch("/api/audit-events")
       ]);
 
       if (statsRes.ok) setStats(await statsRes.json());

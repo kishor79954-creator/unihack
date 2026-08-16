@@ -3,19 +3,25 @@ import models
 from typing import Dict, Any
 from datetime import datetime
 
-def get_product(db: Session, product_id: int):
-    return db.query(models.Product).filter(models.Product.id == product_id).first()
+def get_product(db: Session, product_id: int, workspace_id: str = "default"):
+    return db.query(models.Product).filter(
+        models.Product.id == product_id,
+        models.Product.workspace_id == workspace_id
+    ).first()
 
-def get_products(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Product).offset(skip).limit(limit).all()
+def get_products(db: Session, skip: int = 0, limit: int = 100, workspace_id: str = "default"):
+    return db.query(models.Product).filter(
+        models.Product.workspace_id == workspace_id
+    ).offset(skip).limit(limit).all()
 
-def save_extracted_data(db: Session, extraction: Dict[str, Any], file_path: str, filename: str):
-    """Saves the entire extracted product intelligence object and any additional products to the relational DB."""
+def save_extracted_data(db: Session, extraction: Dict[str, Any], file_path: str, filename: str, workspace_id: str = "default"):
+    """Saves the entire extracted product intelligence object and any additional products to the relational DB scoped to workspace_id."""
     
     # 1. Primary Product
     p_data = extraction.get("product", {})
     
     db_product = models.Product(
+        workspace_id=workspace_id,
         sku=p_data.get("sku", f"SKU-{int(datetime.utcnow().timestamp())}"),
         name=p_data.get("name", "Imported Product"),
         description=p_data.get("description", f"Extracted specifications from {filename}"),
@@ -31,6 +37,7 @@ def save_extracted_data(db: Session, extraction: Dict[str, Any], file_path: str,
     
     # 2. Source Document Record
     db_source = models.Source(
+        workspace_id=workspace_id,
         product_id=db_product.id,
         source_type=models.SourceType.PDF if filename.lower().endswith(".pdf") else models.SourceType.MANUAL,
         name=filename,
@@ -87,6 +94,7 @@ def save_extracted_data(db: Session, extraction: Dict[str, Any], file_path: str,
     additional_products = extraction.get("additional_products", [])
     for extra in additional_products:
         extra_prod = models.Product(
+            workspace_id=workspace_id,
             sku=extra.get("sku", f"SKU-{int(datetime.utcnow().timestamp())}"),
             name=extra.get("name", "Catalog Product"),
             description=extra.get("description", ""),
@@ -101,6 +109,7 @@ def save_extracted_data(db: Session, extraction: Dict[str, Any], file_path: str,
         db.flush()
         
         extra_source = models.Source(
+            workspace_id=workspace_id,
             product_id=extra_prod.id,
             source_type=models.SourceType.MANUAL,
             name=filename,
@@ -144,6 +153,7 @@ def save_extracted_data(db: Session, extraction: Dict[str, Any], file_path: str,
     # 5. Log Real Audit Event
     total_created = 1 + len(additional_products)
     audit = models.AuditEvent(
+        workspace_id=workspace_id,
         actor="System Ingestion Engine",
         action="INGEST_CATALOG",
         entity_type="Catalog",

@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL, apiFetch, getWorkspaceId } from "@/lib/api";
 
 function ProductsContent() {
   const searchParams = useSearchParams();
@@ -28,12 +28,12 @@ function ProductsContent() {
 
   const fetchProducts = () => {
     setLoading(true);
-    let url = `${API_BASE_URL}/api/products`;
+    let path = "/api/products";
     if (activeTab !== "all") {
-      url += `?filter=${activeTab}`;
+      path += `?filter=${activeTab}`;
     }
 
-    fetch(url)
+    apiFetch(path)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -82,7 +82,7 @@ function ProductsContent() {
   const handleDeleteProduct = async (id: number, name: string) => {
     if (!confirm(`Are you sure you want to delete "${name}" from the catalog? This will cascade remove attributes and evidence.`)) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/products/${id}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/products/${id}`, { method: "DELETE" });
       if (res.ok) {
         setFeedbackMessage({ type: "success", text: `Product "${name}" successfully deleted.` });
         fetchProducts();
@@ -94,7 +94,7 @@ function ProductsContent() {
 
   const handleToggleArchive = async (id: number) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/products/${id}/archive`, { method: "POST" });
+      const res = await apiFetch(`/api/products/${id}/archive`, { method: "POST" });
       if (res.ok) {
         const data = await res.json();
         setFeedbackMessage({ type: "success", text: `Status updated to ${data.new_status}.` });
@@ -111,7 +111,7 @@ function ProductsContent() {
     if (!confirm(`Are you sure you want to bulk delete ${count} selected product(s)?`)) return;
     setBulkActionLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/products/bulk-delete`, {
+      const res = await apiFetch("/api/products/bulk-delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ product_ids: Array.from(selectedIds) })
@@ -132,7 +132,7 @@ function ProductsContent() {
     const count = selectedIds.size;
     setBulkActionLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/products/bulk-archive`, {
+      const res = await apiFetch("/api/products/bulk-archive", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ product_ids: Array.from(selectedIds), status: targetStatus })
@@ -153,7 +153,7 @@ function ProductsContent() {
     const count = selectedIds.size;
     setBulkActionLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/products/bulk-publish`, {
+      const res = await apiFetch("/api/products/bulk-publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ product_ids: Array.from(selectedIds) })
@@ -171,7 +171,8 @@ function ProductsContent() {
   };
 
   const handleExport = (format: "csv" | "json") => {
-    window.open(`${API_BASE_URL}/api/catalog/export?format=${format}`, "_blank");
+    const ws = getWorkspaceId();
+    window.open(`${API_BASE_URL}/api/catalog/export?format=${format}&workspace_id=${ws}`, "_blank");
   };
 
   const filterTabs = [

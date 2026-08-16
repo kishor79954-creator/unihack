@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CheckCircle, AlertTriangle, ShieldCheck, Download, RefreshCw, Layers, Box, Upload, ArrowRight } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { API_BASE_URL } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 export default function PublishingWorkspacePage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -16,7 +16,7 @@ export default function PublishingWorkspacePage() {
   const [loading, setLoading] = useState(true);
 
   const fetchProducts = () => {
-    fetch(`${API_BASE_URL}/api/products`)
+    apiFetch("/api/products")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -39,7 +39,7 @@ export default function PublishingWorkspacePage() {
 
   useEffect(() => {
     if (selectedProductId) {
-      fetch(`${API_BASE_URL}/api/products/${selectedProductId}`)
+      apiFetch(`/api/products/${selectedProductId}`)
         .then((res) => res.json())
         .then((p) => setSelectedProduct(p))
         .catch(console.error);
@@ -51,8 +51,9 @@ export default function PublishingWorkspacePage() {
   const handlePublish = async () => {
     if (!selectedProductId) return;
     setPublishing(true);
+    setResult(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/publish/${selectedProductId}`, { method: "POST" });
+      const res = await apiFetch(`/api/publish/${selectedProductId}`, { method: "POST" });
       const data = await res.json();
       setResult(data);
       fetchProducts();

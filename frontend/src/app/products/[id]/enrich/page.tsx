@@ -8,7 +8,7 @@ import {
   Box, ShieldCheck, Sparkles, AlertCircle, RefreshCw, Send
 } from "lucide-react";
 import { clsx } from "clsx";
-import { API_BASE_URL } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 export default function ProductEnrichmentWorkspace() {
   const params = useParams();
@@ -21,7 +21,7 @@ export default function ProductEnrichmentWorkspace() {
   const [published, setPublished] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/enrichment/analyze/${id}`)
+    apiFetch(`/api/enrichment/analyze/${id}`)
       .then(res => res.json())
       .then(d => {
         setData(d);
@@ -33,7 +33,7 @@ export default function ProductEnrichmentWorkspace() {
   const handlePublish = async () => {
     setPublishing(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/publish/${id}`, { method: "POST" });
+      const res = await apiFetch(`/api/publish/${id}`, { method: "POST" });
       const responseData = await res.json();
       if (responseData.status === "PUBLISHED") {
         setPublished(true);

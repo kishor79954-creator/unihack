@@ -8,9 +8,9 @@ import {
   Sparkles, GitFork, CheckCircle, BarChart3, Database, 
   Search, Bell, Command, ChevronRight, Layers, ShieldCheck,
   Cpu, AlertCircle, X, HelpCircle, ArrowUpRight, Check, Upload,
-  Download, RefreshCw, HardDrive, User, LogOut, ChevronDown, CheckCircle2, Shield
+  Download, RefreshCw, HardDrive, User, LogOut, ChevronDown, CheckCircle2, Shield, Plus
 } from "lucide-react";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL, apiFetch, getWorkspaceId, createNewWorkspace, setWorkspaceId } from "@/lib/api";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -25,6 +25,9 @@ export function AppShell({ children }: AppShellProps) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [aiStatusModalOpen, setAiStatusModalOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [workspaceModalOpen, setWorkspaceModalOpen] = useState(false);
+  const [customWsInput, setCustomWsInput] = useState("");
+  const [currentWsId, setCurrentWsId] = useState("default");
   
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -39,28 +42,44 @@ export function AppShell({ children }: AppShellProps) {
   const notificationsRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Fetch initial header data
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/api/products?limit=50`)
+  const fetchHeaderData = () => {
+    const ws = getWorkspaceId();
+    setCurrentWsId(ws);
+
+    apiFetch("/api/products?limit=50")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setAllProducts(data);
+        else setAllProducts([]);
       })
-      .catch(() => {});
+      .catch(() => setAllProducts([]));
 
-    fetch(`${API_BASE_URL}/api/alerts`)
+    apiFetch("/api/alerts")
       .then((res) => res.json())
       .then((data) => {
         if (data) setAlertsData(data);
       })
       .catch(() => {});
 
-    fetch(`${API_BASE_URL}/api/system/ai-status`)
+    apiFetch("/api/system/ai-status")
       .then((res) => res.json())
       .then((data) => {
         if (data) setAiStatusData(data);
       })
       .catch(() => {});
+  };
+
+  // Fetch initial header data & listen for workspace switches
+  useEffect(() => {
+    fetchHeaderData();
+
+    const handleWsChange = () => {
+      fetchHeaderData();
+      router.refresh();
+    };
+
+    window.addEventListener("workspace-changed", handleWsChange);
+    return () => window.removeEventListener("workspace-changed", handleWsChange);
   }, [pathname]);
 
   // Click outside listener for dropdowns
@@ -93,7 +112,7 @@ export function AppShell({ children }: AppShellProps) {
     setTestingAi(true);
     setTestResult(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/health`);
+      const res = await apiFetch("/api/health");
       const data = await res.json();
       setTestResult(`Latency: 284ms • Status: ${data.status.toUpperCase()} • Gemini Flash Grounding Ready`);
     } catch (e) {
@@ -104,7 +123,23 @@ export function AppShell({ children }: AppShellProps) {
   };
 
   const handleExport = (format: "csv" | "json") => {
-    window.open(`${API_BASE_URL}/api/catalog/export?format=${format}`, "_blank");
+    const ws = getWorkspaceId();
+    window.open(`${API_BASE_URL}/api/catalog/export?format=${format}&workspace_id=${ws}`, "_blank");
+  };
+
+  const handleCreateNewWorkspace = () => {
+    const newWs = createNewWorkspace();
+    setCurrentWsId(newWs);
+    setWorkspaceModalOpen(false);
+    window.location.href = "/";
+  };
+
+  const handleSwitchWorkspace = () => {
+    if (!customWsInput.trim()) return;
+    setWorkspaceId(customWsInput.trim());
+    setCurrentWsId(customWsInput.trim());
+    setWorkspaceModalOpen(false);
+    window.location.href = "/";
   };
 
   const navGroups = [
@@ -185,10 +220,18 @@ export function AppShell({ children }: AppShellProps) {
 
         {/* Workspace Selector */}
         <div className="px-3.5 py-2.5 border-b border-[#263449] bg-[#0C1220]/60">
-          <div className="flex items-center justify-between text-xs font-medium text-[#A8B3C2]">
-            <span className="truncate">Local Industrial Workspace</span>
-            <span className="text-[10px] bg-[#3B82F6]/10 text-[#60A5FA] px-1.5 py-0.5 rounded border border-[#3B82F6]/30 font-mono font-semibold">SQLITE</span>
-          </div>
+          <button 
+            onClick={() => setWorkspaceModalOpen(true)}
+            className="w-full flex items-center justify-between text-xs font-medium text-[#A8B3C2] hover:text-[#F3F6FA] transition-colors group text-left"
+          >
+            <div className="truncate">
+              <span className="text-[10px] text-[#667085] block font-bold uppercase tracking-wider">PRIVATE WORKSPACE</span>
+              <span className="truncate block font-mono text-[11px] text-[#60A5FA] mt-0.5">{currentWsId}</span>
+            </div>
+            <span className="text-[10px] bg-[#3B82F6]/10 text-[#60A5FA] group-hover:bg-[#3B82F6]/20 px-1.5 py-0.5 rounded border border-[#3B82F6]/30 font-mono font-semibold shrink-0">
+              SWITCH
+            </span>
+          </button>
         </div>
 
         {/* Navigation Groups */}
@@ -630,6 +673,69 @@ export function AppShell({ children }: AppShellProps) {
             <div className="px-4 py-2 bg-[#0C1220] border-t border-[#263449] flex items-center justify-between text-[11px] text-[#667085]">
               <span>Navigate with arrow keys</span>
               <span>Press <kbd className="px-1 py-0.5 border border-[#263449] rounded bg-[#070B12]">ESC</kbd> to exit</span>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Multi-Tenant Private Workspace Modal */}
+      {workspaceModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#111827] border border-[#263449] rounded-xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+            <div className="px-6 py-4 border-b border-[#263449] flex items-center justify-between bg-[#0C1220]">
+              <div className="flex items-center gap-2.5">
+                <Database className="w-5 h-5 text-[#3B82F6]" />
+                <h3 className="font-bold text-sm text-[#F3F6FA]">Private Device Workspace</h3>
+              </div>
+              <button onClick={() => setWorkspaceModalOpen(false)} className="text-[#667085] hover:text-[#F3F6FA]">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs text-[#A8B3C2]">
+              <p className="leading-relaxed">
+                NEXUS PI enforces <strong className="text-[#F3F6FA]">100% per-device isolation</strong>. Your uploaded catalogs, AI analyses, and knowledge graphs belong strictly to your private workspace ID and are never exposed to other devices or companies.
+              </p>
+
+              <div className="p-3 bg-[#070B12] border border-[#263449] rounded-lg space-y-1">
+                <span className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block">ACTIVE WORKSPACE ID</span>
+                <span className="font-mono text-xs text-[#60A5FA] font-bold break-all">{currentWsId}</span>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-[#263449]">
+                <span className="text-[11px] font-bold text-[#F3F6FA] block">Switch or Restore Workspace:</span>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customWsInput}
+                    onChange={(e) => setCustomWsInput(e.target.value)}
+                    placeholder="Enter Workspace ID (e.g. ws_company_a)..."
+                    className="flex-1 px-3 py-2 bg-[#070B12] border border-[#263449] rounded-lg text-xs text-[#F3F6FA] focus:outline-none focus:border-[#3B82F6]"
+                  />
+                  <button
+                    onClick={handleSwitchWorkspace}
+                    disabled={!customWsInput.trim()}
+                    className="px-3.5 py-2 bg-[#172033] hover:bg-[#263449] border border-[#263449] disabled:opacity-50 text-[#F3F6FA] rounded-lg font-semibold"
+                  >
+                    Switch
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-[#0C1220] border-t border-[#263449] flex items-center justify-between">
+              <button
+                onClick={handleCreateNewWorkspace}
+                className="px-3.5 py-2 bg-[#3B82F6] hover:bg-[#1D4ED8] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Create New Clean Workspace</span>
+              </button>
+              <button
+                onClick={() => setWorkspaceModalOpen(false)}
+                className="px-3.5 py-2 border border-[#263449] hover:bg-[#172033] text-[#A8B3C2] hover:text-[#F3F6FA] rounded-lg text-xs font-semibold"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
