@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Layers, Sparkles, CheckCircle2, Shield, RefreshCw, Upload, Box } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { FactCheckPanel } from "@/components/ui/FactCheckPanel";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function ContentStudioPage() {
   const [activeTab, setActiveTab] = useState("description");
@@ -15,7 +16,7 @@ export default function ContentStudioPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/products")
+    fetch(`${API_BASE_URL}/api/products`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -37,7 +38,7 @@ export default function ContentStudioPage() {
       return;
     }
 
-    fetch(`http://localhost:8000/api/products/${selectedProductId}`)
+    fetch(`${API_BASE_URL}/api/products/${selectedProductId}`)
       .then((res) => res.json())
       .then((p) => {
         if (p && p.id) {

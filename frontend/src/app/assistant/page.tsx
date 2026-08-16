@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { EvidenceDrawer } from "@/components/ui/EvidenceDrawer";
+import { API_BASE_URL } from "@/lib/api";
 
 interface Citation {
   text: string;
@@ -69,7 +70,7 @@ export default function AssistantPage() {
 
   // 1. Fetch real products from SQLite database
   useEffect(() => {
-    fetch("http://localhost:8000/api/products")
+    fetch(`${API_BASE_URL}/api/products`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -89,14 +90,14 @@ export default function AssistantPage() {
       const pId = activeContext.split("_")[1];
       
       // Fetch Product Details
-      fetch(`http://localhost:8000/api/products/${pId}`)
+      fetch(`${API_BASE_URL}/api/products/${pId}`)
         .then((res) => res.json())
         .then((data) => setSelectedProduct(data))
         .catch(console.error);
 
       // Fetch Dynamic Product-Aware Questions
       setSuggestionsLoading(true);
-      fetch(`http://localhost:8000/api/copilot/suggestions/${pId}`)
+      fetch(`${API_BASE_URL}/api/copilot/suggestions/${pId}`)
         .then((res) => res.json())
         .then((data) => {
           if (data && data.questions) {
@@ -143,7 +144,7 @@ export default function AssistantPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/api/chat", {
+      const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

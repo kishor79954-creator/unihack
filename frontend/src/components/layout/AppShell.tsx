@@ -10,6 +10,7 @@ import {
   Cpu, AlertCircle, X, HelpCircle, ArrowUpRight, Check, Upload,
   Download, RefreshCw, HardDrive, User, LogOut, ChevronDown, CheckCircle2, Shield
 } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -40,21 +41,21 @@ export function AppShell({ children }: AppShellProps) {
 
   // Fetch initial header data
   useEffect(() => {
-    fetch("http://localhost:8000/api/products?limit=50")
+    fetch(`${API_BASE_URL}/api/products?limit=50`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setAllProducts(data);
       })
       .catch(() => {});
 
-    fetch("http://localhost:8000/api/alerts")
+    fetch(`${API_BASE_URL}/api/alerts`)
       .then((res) => res.json())
       .then((data) => {
         if (data) setAlertsData(data);
       })
       .catch(() => {});
 
-    fetch("http://localhost:8000/api/system/ai-status")
+    fetch(`${API_BASE_URL}/api/system/ai-status`)
       .then((res) => res.json())
       .then((data) => {
         if (data) setAiStatusData(data);
@@ -92,7 +93,7 @@ export function AppShell({ children }: AppShellProps) {
     setTestingAi(true);
     setTestResult(null);
     try {
-      const res = await fetch("http://localhost:8000/api/health");
+      const res = await fetch(`${API_BASE_URL}/api/health`);
       const data = await res.json();
       setTestResult(`Latency: 284ms • Status: ${data.status.toUpperCase()} • Gemini Flash Grounding Ready`);
     } catch (e) {
@@ -103,7 +104,7 @@ export function AppShell({ children }: AppShellProps) {
   };
 
   const handleExport = (format: "csv" | "json") => {
-    window.open(`http://localhost:8000/api/catalog/export?format=${format}`, "_blank");
+    window.open(`${API_BASE_URL}/api/catalog/export?format=${format}`, "_blank");
   };
 
   const navGroups = [

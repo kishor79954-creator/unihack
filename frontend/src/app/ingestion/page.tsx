@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Upload, FileText, CheckCircle2, RefreshCw, Sparkles, ArrowRight, Trash2, Check, AlertCircle, Plus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { API_BASE_URL } from "@/lib/api";
 
 interface DocumentStreamItem {
   id: string;
@@ -12,7 +13,7 @@ interface DocumentStreamItem {
   sourceType: string;
   pages: string;
   parsedAttributes: number;
-  status: string;
+  status: "PARSED" | "EXTRACTING" | "VERIFIED" | "ERROR";
   productId?: number;
 }
 
@@ -27,7 +28,7 @@ export default function IngestionPage() {
 
   // Fetch real uploaded sources from backend on load
   const fetchSources = () => {
-    fetch("http://localhost:8000/api/products")
+    fetch(`${API_BASE_URL}/api/products`)
       .then((res) => res.json())
       .then((products) => {
         if (Array.isArray(products) && products.length > 0) {
@@ -37,7 +38,7 @@ export default function IngestionPage() {
             sourceType: p.category || "Technical Spec",
             pages: "Active Stream",
             parsedAttributes: p.attributes ? p.attributes.length : 8,
-            status: p.status || "VERIFIED",
+            status: (p.status || "VERIFIED") as "PARSED" | "EXTRACTING" | "VERIFIED" | "ERROR",
             productId: p.id
           }));
           setDocumentStream(items);
@@ -55,7 +56,7 @@ export default function IngestionPage() {
   const handleClearDemoData = async () => {
     if (!confirm("Are you sure you want to delete all catalog data and reset the database?")) return;
     try {
-      await fetch("http://localhost:8000/api/reset", { method: "POST" });
+      await fetch(`${API_BASE_URL}/api/reset`, { method: "POST" });
       setDocumentStream([]);
       setNotification({
         type: "success",
@@ -85,13 +86,13 @@ export default function IngestionPage() {
     try {
       // If user selected Replace mode, wipe previous catalog first
       if (importMode === "replace") {
-        await fetch("http://localhost:8000/api/reset", { method: "POST" });
+        await fetch(`${API_BASE_URL}/api/reset`, { method: "POST" });
       }
 
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("http://localhost:8000/api/products/upload", {
+      const res = await fetch(`${API_BASE_URL}/api/products/upload`, {
         method: "POST",
         body: formData,
       });

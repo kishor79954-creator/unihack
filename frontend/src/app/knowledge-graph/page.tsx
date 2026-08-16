@@ -11,6 +11,7 @@ import {
 import { AppShell } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EvidenceDrawer } from "@/components/ui/EvidenceDrawer";
+import { API_BASE_URL } from "@/lib/api";
 
 interface GraphNode {
   id: string;
@@ -58,7 +59,7 @@ export default function KnowledgeGraphPage() {
 
   // 1. Fetch available products from database
   useEffect(() => {
-    fetch("http://localhost:8000/api/products")
+    fetch(`${API_BASE_URL}/api/products`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -86,7 +87,7 @@ export default function KnowledgeGraphPage() {
     }
 
     setLoading(true);
-    fetch(`http://localhost:8000/api/graph/${selectedProductId}`)
+    fetch(`${API_BASE_URL}/api/graph/${selectedProductId}`)
       .then((res) => {
         if (!res.ok) return null;
         return res.json();

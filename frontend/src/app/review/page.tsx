@@ -5,12 +5,13 @@ import Link from "next/link";
 import { ShieldCheck, AlertTriangle, CheckCircle, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function DataQualityPage() {
   const [reviews, setReviews] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/reviews")
+    fetch(`${API_BASE_URL}/api/reviews`)
       .then((res) => res.json())
       .then((data) => setReviews(data))
       .catch(() => setReviews([]));

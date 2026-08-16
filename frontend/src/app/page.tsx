@@ -7,14 +7,15 @@ import {
 import { AppShell } from "@/components/layout/AppShell";
 import { KPICard } from "@/components/ui/KPICard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { API_BASE_URL } from "@/lib/api";
 
 async function getDashboardData() {
   try {
     const [statsRes, productsRes, reviewsRes, auditRes] = await Promise.all([
-      fetch("http://localhost:8000/api/stats", { cache: "no-store" }),
-      fetch("http://localhost:8000/api/products", { cache: "no-store" }),
-      fetch("http://localhost:8000/api/reviews", { cache: "no-store" }),
-      fetch("http://localhost:8000/api/audit-events", { cache: "no-store" })
+      fetch(`${API_BASE_URL}/api/stats`, { cache: "no-store" }),
+      fetch(`${API_BASE_URL}/api/products`, { cache: "no-store" }),
+      fetch(`${API_BASE_URL}/api/reviews`, { cache: "no-store" }),
+      fetch(`${API_BASE_URL}/api/audit-events`, { cache: "no-store" })
     ]);
 
     const stats = statsRes.ok ? await statsRes.json() : {
