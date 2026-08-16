@@ -1,9 +1,13 @@
 fastapi
-uvicorn
+uvicorn[standard]
 sqlalchemy
 psycopg2-binary
 pydantic
 pydantic-settings
 python-dotenv
 langchain
-neo4j
+langchain-google-genai
+google-generativeai
+pymupdf
+python-multipart
+requests
