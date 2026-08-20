@@ -392,28 +392,131 @@ def get_ai_system_status(ws_id: str = Depends(get_workspace_id), db: Session = D
         }
     }
 
-@app.post("/api/products/upload")
-async def upload_document(file: UploadFile = File(...), ws_id: str = Depends(get_workspace_id), db: Session = Depends(get_db)):
+from services.catalog_processor import CatalogProcessor
+
+@app.post("/api/catalog/import")
+async def import_catalog(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    ws_id: str = Depends(get_workspace_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Accepts arbitrary dataset uploads (CSV, JSON, Excel, PDF), creates a persistent
+    processing job, and kicks off the 11-stage asynchronous intelligence pipeline.
+    """
     file_path = save_upload_file(file)
+    job_id = f"CAT-{datetime.utcnow().strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
+    ext = file.filename.split(".")[-1].upper() if "." in file.filename else "CSV"
     
-    try:
-        extracted_data = doc_ai.process_document(file_path)
-    except Exception as e:
-        return {"error": str(e), "status": "failed"}
-
-    try:
-        db_product = crud.save_extracted_data(db, extracted_data, file_path, file.filename, workspace_id=ws_id)
-    except Exception as e:
-        return {"error": f"DB Save Error: {e}", "status": "failed"}
-
+    job = models.CatalogJob(
+        id=job_id,
+        workspace_id=ws_id,
+        filename=file.filename,
+        file_type=ext,
+        file_path=file_path,
+        status="queued",
+        stage="upload",
+        stage_label="Queued in Pipeline",
+        progress=0.0,
+        activity_logs=[{
+            "time": datetime.utcnow().strftime("%H:%M:%S"),
+            "message": f"Job {job_id} created for '{file.filename}'. Queuing worker...",
+            "type": "info",
+            "stage": "upload"
+        }]
+    )
+    db.add(job)
+    db.commit()
+    
+    # Launch real asynchronous processing worker
+    background_tasks.add_task(CatalogProcessor.process_job, job_id)
+    
     return {
-        "status": "success",
-        "message": f"Successfully processed {file.filename} into workspace {ws_id}",
-        "file_path": file_path,
-        "product_id": db_product.id,
-        "workspace_id": ws_id,
-        "extraction": extracted_data
+        "job_id": job_id,
+        "status": "queued",
+        "filename": file.filename,
+        "message": "Dataset queued for intelligence processing."
     }
+
+@app.get("/api/catalog/jobs/{job_id}")
+def get_catalog_job_status(job_id: str, ws_id: str = Depends(get_workspace_id), db: Session = Depends(get_db)):
+    """Returns real-time backend processing metrics, active stage, and product logs."""
+    job = db.query(models.CatalogJob).filter(models.CatalogJob.id == job_id, models.CatalogJob.workspace_id == ws_id).first()
+    if not job:
+        job = db.query(models.CatalogJob).filter(models.CatalogJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Processing job not found")
+        
+    return {
+        "job_id": job.id,
+        "filename": job.filename,
+        "file_type": job.file_type,
+        "status": job.status,
+        "stage": job.stage,
+        "stage_label": job.stage_label,
+        "progress": job.progress,
+        "total_products": job.total_products,
+        "processed_products": job.processed_products,
+        "products_detected": job.products_detected,
+        "attributes_extracted": job.attributes_extracted,
+        "issues_detected": job.issues_detected,
+        "conflicts_detected": job.conflicts_detected,
+        "enrichment_proposals": job.enrichment_proposals,
+        "evidence_links": job.evidence_links,
+        "failed_rows": job.failed_rows,
+        "quality_score": job.quality_score,
+        "current_product": {
+            "name": job.current_product_name,
+            "sku": job.current_product_sku,
+            "stage": job.current_product_stage
+        },
+        "column_mapping": job.column_mapping or {},
+        "activity_stream": job.activity_logs or [],
+        "error_message": job.error_message,
+        "warning_details": job.warning_details or [],
+        "created_at": job.created_at.isoformat() if job.created_at else None,
+        "started_at": job.started_at.isoformat() if job.started_at else None,
+        "completed_at": job.completed_at.isoformat() if job.completed_at else None,
+        "message": f"{job.stage_label} ({job.processed_products}/{job.total_products} products)" if job.status == "processing" else ("Catalog analysis complete" if job.status == "completed" else ("Processing failed" if job.status == "failed" else "Job queued"))
+    }
+
+@app.post("/api/catalog/jobs/{job_id}/cancel")
+def cancel_catalog_job(job_id: str, ws_id: str = Depends(get_workspace_id), db: Session = Depends(get_db)):
+    job = db.query(models.CatalogJob).filter(models.CatalogJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    job.status = "cancelled"
+    job.stage_label = "Cancelled"
+    db.commit()
+    return {"status": "cancelled", "job_id": job_id}
+
+@app.get("/api/catalog/jobs/{job_id}/logs")
+def get_catalog_job_logs(job_id: str, ws_id: str = Depends(get_workspace_id), db: Session = Depends(get_db)):
+    job = db.query(models.CatalogJob).filter(models.CatalogJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return {
+        "job_id": job.id,
+        "status": job.status,
+        "logs": job.activity_logs or [],
+        "errors": job.warning_details or []
+    }
+
+@app.get("/api/catalog/jobs")
+def list_catalog_jobs(ws_id: str = Depends(get_workspace_id), db: Session = Depends(get_db)):
+    jobs = db.query(models.CatalogJob).filter(models.CatalogJob.workspace_id == ws_id).order_by(models.CatalogJob.created_at.desc()).limit(20).all()
+    return jobs
+
+@app.post("/api/products/upload")
+async def upload_document(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    ws_id: str = Depends(get_workspace_id),
+    db: Session = Depends(get_db)
+):
+    # Delegate to asynchronous processing pipeline
+    return await import_catalog(background_tasks, file, ws_id, db)
 
 @app.get("/api/reviews")
 def get_reviews(skip: int = 0, limit: int = 100, status: str = None, priority: str = None, ws_id: str = Depends(get_workspace_id), db: Session = Depends(get_db)):

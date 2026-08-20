@@ -271,28 +271,68 @@ class GraphEdge(Base):
 
 class CatalogJob(Base):
     __tablename__ = "catalog_jobs"
-    id = Column(String, primary_key=True, index=True) # e.g. "CAT-1028"
+    id = Column(String, primary_key=True, index=True) # e.g. "CAT-2026-1028"
+    workspace_id = Column(String, default="default", index=True)
     filename = Column(String)
-    status = Column(String, default="QUEUED") # QUEUED, VALIDATING, PROCESSING, COMPLETED, FAILED, PARTIAL
-    total_rows = Column(Integer, default=0)
-    processed_rows = Column(Integer, default=0)
+    file_type = Column(String, default="CSV")
+    file_path = Column(String, nullable=True)
+    
+    # Lifecycle: queued, processing, completed, failed, cancelled
+    status = Column(String, default="queued", index=True)
+    
+    # Stages: upload, parsing, product_detection, attribute_extraction, classification, validation, conflict_detection, evidence_mapping, ai_enrichment, quality_scoring, finalization
+    stage = Column(String, default="upload")
+    stage_label = Column(String, default="Upload")
+    progress = Column(Float, default=0.0) # 0.0 to 100.0
+    
+    # Real-time Metrics
+    total_products = Column(Integer, default=0)
+    processed_products = Column(Integer, default=0)
+    products_detected = Column(Integer, default=0)
+    attributes_extracted = Column(Integer, default=0)
+    issues_detected = Column(Integer, default=0)
+    conflicts_detected = Column(Integer, default=0)
+    enrichment_proposals = Column(Integer, default=0)
+    evidence_links = Column(Integer, default=0)
     failed_rows = Column(Integer, default=0)
+    quality_score = Column(Float, default=0.0)
+    
+    # Active Product Being Processed
+    current_product_name = Column(String, nullable=True)
+    current_product_sku = Column(String, nullable=True)
+    current_product_stage = Column(String, nullable=True)
+    
+    # Column mapping & logs
+    column_mapping = Column(JSON, nullable=True)
+    activity_logs = Column(JSON, default=list) # List of {"time": str, "message": str, "type": str, "stage": str}
+    error_message = Column(Text, nullable=True)
+    warning_details = Column(JSON, nullable=True) # List of failed/warning row summaries
+    
     created_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
+
+    tasks = relationship("CatalogTask", back_populates="job", cascade="all, delete-orphan")
 
 class CatalogTask(Base):
     __tablename__ = "catalog_tasks"
     id = Column(Integer, primary_key=True, index=True)
     job_id = Column(String, ForeignKey("catalog_jobs.id"))
+    workspace_id = Column(String, default="default", index=True)
     row_index = Column(Integer)
     row_data = Column(JSON)
-    status = Column(String, default="QUEUED") # QUEUED, PROCESSING, COMPLETED, FAILED
+    status = Column(String, default="QUEUED") # QUEUED, PROCESSING, COMPLETED, FAILED, WARNING
+    stage = Column(String, default="queued")
     error_message = Column(Text, nullable=True)
+    extracted_attributes_count = Column(Integer, default=0)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
+    
+    job = relationship("CatalogJob", back_populates="tasks")
 
 class DuplicateCandidate(Base):
     __tablename__ = "duplicate_candidates"
     id = Column(Integer, primary_key=True, index=True)
+    workspace_id = Column(String, default="default", index=True)
     product_a_id = Column(Integer, ForeignKey("products.id"))
     product_b_id = Column(Integer, ForeignKey("products.id"))
     similarity_score = Column(Float)

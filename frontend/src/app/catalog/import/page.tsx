@@ -1,301 +1,179 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
-  LayoutDashboard, Box, Search, AlertTriangle, Network, ShieldCheck, 
-  Settings, UploadCloud, FileSpreadsheet, CheckCircle2, ChevronRight,
-  Database, RefreshCw, XCircle, FileWarning, Play, Pause, Activity
+  UploadCloud, FileSpreadsheet, CheckCircle2, 
+  Database, RefreshCw, ArrowRight, FileText, AlertCircle
 } from "lucide-react";
-import { clsx } from "clsx";
+import { AppShell } from "@/components/layout/AppShell";
+import { apiFetch } from "@/lib/api";
 
-export default function CatalogImport() {
-  const [step, setStep] = useState(1);
-  const [file, setFile] = useState<File | null>(null);
-  
-  // Data from backend
-  const [jobId, setJobId] = useState("");
-  const [previewRows, setPreviewRows] = useState<any[]>([]);
-  const [mappingSuggestions, setMappingSuggestions] = useState<any>({});
-  
-  // Job progress
-  const [jobStatus, setJobStatus] = useState<any>(null);
-
+export default function CatalogImportPage() {
+  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleFileUpload = async (e: any) => {
-    const selected = e.target.files?.[0];
-    if (!selected) return;
-    setFile(selected);
-    
-    // Auto-advance and upload to backend
-    setStep(2);
-    
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+    setUploading(true);
+    setErrorMessage(null);
+
     const formData = new FormData();
-    formData.append("file", selected);
-    
+    formData.append("file", file);
+
     try {
-      const res = await fetch("http://localhost:8000/api/catalog/upload", {
+      const res = await apiFetch("/api/catalog/import", {
         method: "POST",
-        body: formData
+        body: formData,
       });
-      const data = await res.json();
-      setJobId(data.job_id);
-      setPreviewRows(data.preview_rows);
-      setMappingSuggestions(data.mapping_suggestions);
-      setStep(3); // Go to mapping once uploaded
-    } catch (e) {
-      console.error(e);
-      alert("Failed to upload catalog.");
-      setStep(1);
-    }
-  };
 
-  const startProcessing = async () => {
-    setStep(4); // Processing step
-    try {
-      await fetch(`http://localhost:8000/api/catalog/${jobId}/process`, {
-        method: "POST"
-      });
-      // Start polling
-      pollJob();
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const pollJob = () => {
-    const interval = setInterval(async () => {
-      const res = await fetch(`http://localhost:8000/api/catalog/jobs/${jobId}`);
       const data = await res.json();
-      setJobStatus(data);
-      if (data.status === "COMPLETED" || data.status === "FAILED") {
-        clearInterval(interval);
+
+      if (!res.ok || data.status === "failed") {
+        throw new Error(data.error || data.detail || "Failed to initiate catalog processing");
       }
-    }, 1000);
+
+      if (data.job_id) {
+        router.push(`/processing/${data.job_id}`);
+      } else {
+        throw new Error("No job identifier returned by backend");
+      }
+    } catch (e: any) {
+      console.error("Upload error:", e);
+      setErrorMessage(e.message || "Failed to upload and initiate processing.");
+      setUploading(false);
+    }
+  };
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileUpload(file);
   };
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-300 font-sans">
-      {/* Mini Sidebar */}
-      <div className="w-16 border-r border-slate-800 bg-slate-900/50 flex flex-col items-center py-6 gap-6 z-10 flex-shrink-0">
-        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold mb-4">N</div>
-        <Link href="/" className="p-3 text-slate-500 hover:text-slate-300 transition-colors"><LayoutDashboard size={20} /></Link>
-        <Link href="/catalog" className="p-3 text-blue-400 bg-blue-900/20 rounded-xl"><Database size={20} /></Link>
-        <Link href="/products" className="p-3 text-slate-500 hover:text-slate-300 transition-colors"><Box size={20} /></Link>
-        <Link href="/review" className="p-3 text-slate-500 hover:text-slate-300 transition-colors"><AlertTriangle size={20} /></Link>
-        <Link href="/audit" className="p-3 text-slate-500 hover:text-slate-300 transition-colors"><ShieldCheck size={20} /></Link>
-      </div>
-
-      <div className="flex-1 flex flex-col min-w-0">
+    <AppShell>
+      <div className="max-w-4xl mx-auto space-y-6 py-4">
+        
         {/* Header */}
-        <header className="h-20 border-b border-slate-800 px-8 flex items-center justify-between bg-slate-900/30">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Import Catalog</h1>
-            <p className="text-sm text-slate-400 mt-1">Transform large product catalogs into validated intelligence.</p>
+        <div className="bg-[#111827] border border-[#263449] p-6 rounded-xl relative overflow-hidden shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] bg-[#3B82F6]/10 text-[#60A5FA] px-2 py-0.5 rounded border border-[#3B82F6]/30 font-mono font-bold uppercase">
+                  BULK INGESTION ENGINE
+                </span>
+              </div>
+              <h1 className="text-xl font-extrabold text-[#F3F6FA] tracking-tight">
+                Import Product Catalog
+              </h1>
+              <p className="text-xs text-[#A8B3C2] mt-0.5">
+                Upload your raw product catalog (CSV, XLSX, JSON) to start the 11-stage intelligence pipeline.
+              </p>
+            </div>
+
+            <Link
+              href="/catalog"
+              className="px-3.5 py-2 border border-[#263449] hover:bg-[#172033] text-[#A8B3C2] hover:text-[#F3F6FA] rounded-lg text-xs font-semibold transition-all self-start sm:self-auto"
+            >
+              Back to Catalog
+            </Link>
           </div>
+        </div>
+
+        {/* Upload Box */}
+        <div 
+          className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center text-center transition-all cursor-pointer bg-[#111827]/40 ${
+            isDragging 
+              ? "border-[#3B82F6] bg-[#3B82F6]/10" 
+              : "border-[#263449] hover:border-[#3B82F6]/60 hover:bg-[#172033]/50"
+          }`}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file) handleFileUpload(file);
+          }}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <div className="w-16 h-16 bg-[#172033] border border-[#263449] rounded-2xl flex items-center justify-center mb-4 text-[#3B82F6] group-hover:scale-105 transition-transform shadow-md">
+            {uploading ? (
+              <RefreshCw className="w-8 h-8 animate-spin text-[#60A5FA]" />
+            ) : (
+              <UploadCloud className="w-8 h-8" />
+            )}
+          </div>
+
+          <h3 className="text-base font-bold text-[#F3F6FA] mb-1">
+            {uploading ? "Queuing Intelligence Pipeline..." : "Drag & drop your catalog file here"}
+          </h3>
+          <p className="text-xs text-[#A8B3C2] max-w-sm mb-6">
+            Supports CSV, JSON, and XLSX. Automatic column detection, attribute normalization, and AI enrichment.
+          </p>
+
+          <button 
+            disabled={uploading}
+            className="px-5 py-2.5 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-2"
+          >
+            {uploading ? "Processing..." : "Select File from Device"}
+          </button>
           
-          {/* Stepper indicator */}
-          <div className="flex items-center gap-4">
-            {[
-              { num: 1, label: "Upload" },
-              { num: 2, label: "Inspect" },
-              { num: 3, label: "Map" },
-              { num: 4, label: "Process" }
-            ].map(s => (
-              <div key={s.num} className="flex items-center gap-2">
-                <div className={clsx(
-                  "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors",
-                  step > s.num ? "bg-emerald-500 border-emerald-500 text-white" :
-                  step === s.num ? "bg-blue-600 border-blue-600 text-white" :
-                  "border-slate-700 text-slate-500"
-                )}>
-                  {step > s.num ? <CheckCircle2 size={16} /> : s.num}
-                </div>
-                <span className={clsx(
-                  "text-sm font-medium",
-                  step >= s.num ? "text-white" : "text-slate-500"
-                )}>{s.label}</span>
-                {s.num < 4 && <ChevronRight size={16} className="text-slate-700 ml-2" />}
-              </div>
-            ))}
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={onFileChange} 
+            accept=".csv,.json,.xlsx" 
+            className="hidden" 
+          />
+        </div>
+
+        {/* Error Notification */}
+        {errorMessage && (
+          <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-xl flex items-center gap-3 text-xs text-red-400">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{errorMessage}</span>
           </div>
-        </header>
+        )}
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-auto p-8">
-          <div className="max-w-5xl mx-auto">
-            
-            {/* STEP 1: UPLOAD */}
-            {step === 1 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4">
-                <div 
-                  className="border-2 border-dashed border-slate-700 rounded-2xl p-16 flex flex-col items-center justify-center text-center hover:border-blue-500 hover:bg-blue-900/10 transition-colors cursor-pointer group"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <UploadCloud size={40} className="text-blue-500" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">Drag & drop your catalog</h2>
-                  <p className="text-slate-400 mb-8 max-w-md">Supports CSV, XLSX, JSON. Upload a file to begin building bulk product intelligence.</p>
-                  
-                  <button className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors">
-                    Choose File
-                  </button>
-                  <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileUpload} accept=".csv,.xlsx" />
-                </div>
-              </div>
-            )}
-
-            {/* STEP 2: INSPECT (Loading State essentially) */}
-            {step === 2 && (
-              <div className="flex flex-col items-center justify-center h-[60vh] animate-pulse">
-                <FileSpreadsheet size={64} className="text-blue-500 mb-6" />
-                <h2 className="text-2xl font-bold text-white mb-2">Inspecting File...</h2>
-                <p className="text-slate-400">Validating columns, checking encoding, identifying structure.</p>
-              </div>
-            )}
-
-            {/* STEP 3: MAPPING */}
-            {step === 3 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4">
-                <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden mb-6 shadow-xl">
-                  <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
-                    <div>
-                      <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                        <Activity className="text-blue-500" /> AI Column Mapping
-                      </h2>
-                      <p className="text-sm text-slate-400 mt-1">Review the AI-suggested column mappings below.</p>
-                    </div>
-                    <div className="flex gap-4">
-                      <div className="px-4 py-2 bg-emerald-900/30 text-emerald-400 border border-emerald-900/50 rounded-lg text-sm font-bold flex items-center gap-2">
-                        <CheckCircle2 size={16} /> 1,248 Rows Validated
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="p-0 overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-slate-950 text-slate-400 text-xs uppercase tracking-wider">
-                          <th className="p-4 border-b border-slate-800 font-bold">Your Column</th>
-                          <th className="p-4 border-b border-slate-800 font-bold">Preview Data</th>
-                          <th className="p-4 border-b border-slate-800 font-bold">NEXUS PI Target</th>
-                          <th className="p-4 border-b border-slate-800 font-bold">AI Confidence</th>
-                        </tr>
-                      </thead>
-                      <tbody className="text-sm">
-                        {Object.entries(mappingSuggestions).map(([col, data]: any) => (
-                          <tr key={col} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
-                            <td className="p-4 font-mono text-blue-400">{col}</td>
-                            <td className="p-4 text-slate-500 truncate max-w-xs">{previewRows[0]?.[col] || "-"}</td>
-                            <td className="p-4">
-                              <select className="bg-slate-950 border border-slate-700 text-white rounded px-3 py-1.5 w-full focus:outline-none focus:border-blue-500">
-                                <option>{data.target}</option>
-                                <option>Product Name</option>
-                                <option>Manufacturer</option>
-                                <option>Part Number</option>
-                                <option>Category</option>
-                                <option>Description</option>
-                                <option>Ignore</option>
-                              </select>
-                            </td>
-                            <td className="p-4">
-                              <div className="flex items-center gap-2">
-                                <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                  <div className="h-full bg-emerald-500" style={{width: `${data.confidence}%`}}></div>
-                                </div>
-                                <span className="text-xs font-bold text-slate-400">{data.confidence}%</span>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div className="flex justify-end mt-8">
-                  <button onClick={startProcessing} className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2">
-                    <Play size={18} fill="currentColor" /> Start Import Processing
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 4: PROCESSING */}
-            {step === 4 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4">
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 mb-6 shadow-xl relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-slate-800">
-                    <div 
-                      className="h-full bg-blue-500 transition-all duration-1000 ease-out" 
-                      style={{width: `${jobStatus?.progress || 0}%`}}
-                    ></div>
-                  </div>
-                  
-                  <div className="flex justify-between items-start mb-12 mt-4">
-                    <div>
-                      <h2 className="text-2xl font-bold text-white mb-2">
-                        {jobStatus?.status === "COMPLETED" ? "Processing Complete!" : "Catalog Processing"}
-                      </h2>
-                      <p className="text-slate-400 text-sm">
-                        Job ID: <span className="font-mono text-slate-300">{jobId}</span>
-                      </p>
-                    </div>
-                    <div className="flex gap-3">
-                      <div className="px-4 py-2 bg-slate-800 rounded-lg text-sm font-bold text-white flex items-center gap-2">
-                        {jobStatus?.status === "COMPLETED" ? <CheckCircle2 className="text-emerald-500" /> : <RefreshCw className="text-blue-500 animate-spin" />}
-                        {jobStatus?.status || "STARTING"}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-6 mb-12">
-                    <div className="bg-slate-950 rounded-xl p-6 border border-slate-800">
-                      <div className="text-slate-500 text-sm font-bold uppercase mb-2">Total</div>
-                      <div className="text-3xl font-bold text-white">{jobStatus?.total || 0}</div>
-                    </div>
-                    <div className="bg-slate-950 rounded-xl p-6 border border-slate-800">
-                      <div className="text-slate-500 text-sm font-bold uppercase mb-2">Processed</div>
-                      <div className="text-3xl font-bold text-blue-400">{jobStatus?.processed || 0}</div>
-                    </div>
-                    <div className="bg-slate-950 rounded-xl p-6 border border-slate-800">
-                      <div className="text-slate-500 text-sm font-bold uppercase mb-2">Review Required</div>
-                      <div className="text-3xl font-bold text-amber-500">
-                        {jobStatus?.processed > 0 ? Math.floor(jobStatus.processed * 0.05) : 0}
-                      </div>
-                    </div>
-                    <div className="bg-slate-950 rounded-xl p-6 border border-slate-800">
-                      <div className="text-slate-500 text-sm font-bold uppercase mb-2">Potential Duplicates</div>
-                      <div className="text-3xl font-bold text-purple-400">
-                        {jobStatus?.processed > 0 ? Math.floor(jobStatus.processed * 0.1) : 0}
-                      </div>
-                    </div>
-                  </div>
-
-                  {jobStatus?.status === "COMPLETED" && (
-                    <div className="flex justify-center gap-4 animate-in fade-in">
-                      <Link href="/catalog" className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors">
-                        View Catalog Dashboard
-                      </Link>
-                      <Link href="/catalog/duplicates" className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
-                        Resolve Duplicates
-                      </Link>
-                    </div>
-                  )}
-                </div>
-
-                {jobStatus?.status !== "COMPLETED" && (
-                  <div className="text-center">
-                    <p className="text-slate-500 text-sm italic">You can leave this page. The catalog intelligence engine runs in the background.</p>
-                  </div>
-                )}
-              </div>
-            )}
+        {/* Pipeline Highlights */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          <div className="bg-[#111827] border border-[#263449] p-4 rounded-xl space-y-1.5">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#F3F6FA]">
+              <Database className="w-4 h-4 text-[#3B82F6]" />
+              <span>Arbitrary Schema Mapping</span>
+            </div>
+            <p className="text-[11px] text-[#A8B3C2] leading-relaxed">
+              Intelligently maps varying column headers, product names, SKUs, and specifications without hardcoded schemas.
+            </p>
           </div>
-        </main>
+
+          <div className="bg-[#111827] border border-[#263449] p-4 rounded-xl space-y-1.5">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#F3F6FA]">
+              <FileText className="w-4 h-4 text-[#22D3EE]" />
+              <span>Real-Time Progress Tracking</span>
+            </div>
+            <p className="text-[11px] text-[#A8B3C2] leading-relaxed">
+              Live updates for each stage: parsing, attribute extraction, validation, conflict detection, and graph sync.
+            </p>
+          </div>
+
+          <div className="bg-[#111827] border border-[#263449] p-4 rounded-xl space-y-1.5">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#F3F6FA]">
+              <CheckCircle2 className="w-4 h-4 text-[#22C55E]" />
+              <span>100% Device Isolation</span>
+            </div>
+            <p className="text-[11px] text-[#A8B3C2] leading-relaxed">
+              Your uploaded catalog is tagged to your private workspace and remains strictly isolated from other users.
+            </p>
+          </div>
+        </div>
+
       </div>
-    </div>
+    </AppShell>
   );
 }

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Upload, FileText, CheckCircle2, RefreshCw, Sparkles, ArrowRight, Trash2, Check, AlertCircle, Plus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -18,6 +19,7 @@ interface DocumentStreamItem {
 }
 
 export default function IngestionPage() {
+  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -80,11 +82,10 @@ export default function IngestionPage() {
     if (!file) return;
     
     setUploading(true);
-    setUploadProgress(`Processing ${file.name} with AI extraction engine...`);
+    setUploadProgress(`Creating intelligence processing job for ${file.name}...`);
     setNotification(null);
 
     try {
-      // If user selected Replace mode, wipe previous catalog first
       if (importMode === "replace") {
         await apiFetch("/api/reset", { method: "POST" });
       }
@@ -92,43 +93,24 @@ export default function IngestionPage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await apiFetch("/api/products/upload", {
+      const res = await apiFetch("/api/catalog/import", {
         method: "POST",
         body: formData,
       });
 
       const data = await res.json();
 
-      if (data.status === "failed" || !res.ok) {
-        throw new Error(data.error || "Failed to process document");
+      if (!res.ok || data.status === "failed") {
+        throw new Error(data.error || "Failed to initiate catalog processing");
       }
 
-      const extractedAttrs = data.extraction?.attributes 
-        ? data.extraction.attributes.length 
-        : 10;
-      
-      const newDoc: DocumentStreamItem = {
-        id: `doc-${Date.now()}`,
-        name: file.name,
-        sourceType: file.name.endsWith(".csv") ? "CSV Dataset" : "PDF Technical Datasheet",
-        pages: file.name.endsWith(".csv") ? "Multi-Row Table" : "Parsed Document",
-        parsedAttributes: extractedAttrs,
-        status: "VERIFIED",
-        productId: data.product_id
-      };
-
-      if (importMode === "replace") {
-        setDocumentStream([newDoc]);
-      } else {
-        setDocumentStream((prev) => [newDoc, ...prev]);
+      if (data.job_id) {
+        // Navigate immediately to dedicated real-time processing workspace
+        router.push(`/processing/${data.job_id}`);
+        return;
       }
 
       setUploading(false);
-      setNotification({
-        type: "success",
-        message: `Successfully ingested "${file.name}"! Extracted ${extractedAttrs} product attribute(s) and persisted into SQLite database.`,
-        productId: data.product_id
-      });
       fetchSources();
 
     } catch (err: any) {
