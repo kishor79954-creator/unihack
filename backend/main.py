@@ -17,9 +17,90 @@ from fastapi.responses import JSONResponse, Response
 from typing import Optional, List
 import time
 import random
+from datetime import datetime
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
+def run_auto_migrations(db_engine):
+    """Safely adds missing columns to existing SQLite / Postgres tables."""
+    from sqlalchemy import inspect, text
+    inspector = inspect(db_engine)
+    
+    tables_to_columns = {
+        "products": [
+            ("workspace_id", "VARCHAR DEFAULT 'default'"),
+        ],
+        "sources": [
+            ("workspace_id", "VARCHAR DEFAULT 'default'"),
+        ],
+        "review_issues": [
+            ("workspace_id", "VARCHAR DEFAULT 'default'"),
+        ],
+        "audit_events": [
+            ("workspace_id", "VARCHAR DEFAULT 'default'"),
+        ],
+        "graph_nodes": [
+            ("workspace_id", "VARCHAR DEFAULT 'default'"),
+        ],
+        "graph_edges": [
+            ("workspace_id", "VARCHAR DEFAULT 'default'"),
+        ],
+        "duplicate_candidates": [
+            ("workspace_id", "VARCHAR DEFAULT 'default'"),
+        ],
+        "catalog_tasks": [
+            ("workspace_id", "VARCHAR DEFAULT 'default'"),
+            ("stage", "VARCHAR DEFAULT 'queued'"),
+            ("extracted_attributes_count", "INTEGER DEFAULT 0"),
+        ],
+        "catalog_jobs": [
+            ("workspace_id", "VARCHAR DEFAULT 'default'"),
+            ("file_type", "VARCHAR DEFAULT 'CSV'"),
+            ("file_path", "VARCHAR"),
+            ("stage", "VARCHAR DEFAULT 'upload'"),
+            ("stage_label", "VARCHAR DEFAULT 'Upload'"),
+            ("progress", "FLOAT DEFAULT 0.0"),
+            ("total_products", "INTEGER DEFAULT 0"),
+            ("processed_products", "INTEGER DEFAULT 0"),
+            ("products_detected", "INTEGER DEFAULT 0"),
+            ("attributes_extracted", "INTEGER DEFAULT 0"),
+            ("issues_detected", "INTEGER DEFAULT 0"),
+            ("conflicts_detected", "INTEGER DEFAULT 0"),
+            ("enrichment_proposals", "INTEGER DEFAULT 0"),
+            ("evidence_links", "INTEGER DEFAULT 0"),
+            ("quality_score", "FLOAT DEFAULT 0.0"),
+            ("current_product_name", "VARCHAR"),
+            ("current_product_sku", "VARCHAR"),
+            ("current_product_stage", "VARCHAR"),
+            ("column_mapping", "JSON"),
+            ("activity_logs", "JSON"),
+            ("error_message", "TEXT"),
+            ("warning_details", "JSON"),
+            ("started_at", "DATETIME"),
+            ("completed_at", "DATETIME"),
+        ]
+    }
+    
+    with db_engine.begin() as conn:
+        for table, cols in tables_to_columns.items():
+            if table in inspector.get_table_names():
+                existing_cols = [c["name"] for c in inspector.get_columns(table)]
+                for col_name, col_def in cols:
+                    if col_name not in existing_cols:
+                        try:
+                            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col_name} {col_def}"))
+                        except Exception as e:
+                            print(f"Migration note ({table}.{col_name}): {e}")
+
+        # Ensure non-unique scoped index on products.sku
+        try:
+            conn.execute(text("DROP INDEX IF EXISTS ix_products_sku"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_products_sku ON products (workspace_id, sku)"))
+        except Exception as e:
+            print(f"Index migration note: {e}")
+
+run_auto_migrations(engine)
 
 app = FastAPI(
     title="NEXUS PI - Multi-Tenant Product Intelligence Platform",

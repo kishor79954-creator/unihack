@@ -162,14 +162,17 @@ class AICopilot:
             "missing_fields": missing_fields
         }
 
-    def generate_product_suggestions(self, product_id: int, db) -> Dict[str, Any]:
+    def generate_product_suggestions(self, product_id: int, db, workspace_id: Optional[str] = None) -> Dict[str, Any]:
         """Generates 4-6 product-aware, prioritized suggested questions."""
         from models import Product
-        product = db.query(Product).filter(Product.id == product_id).first()
+        query = db.query(Product).filter(Product.id == product_id)
+        if workspace_id:
+            query = query.filter(Product.workspace_id == workspace_id)
+        product = query.first()
         if not product:
             return {"product_id": product_id, "questions": []}
 
-        cache_key = f"{product.id}_{str(product.updated_at)}"
+        cache_key = f"{product.id}_{workspace_id or 'default'}_{str(product.updated_at)}"
         if cache_key in self._suggestions_cache:
             return self._suggestions_cache[cache_key]
 

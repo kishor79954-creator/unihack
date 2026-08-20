@@ -261,8 +261,11 @@ class CatalogProcessor:
                 job.stage_label = "Conflict & Duplicate Detection"
                 is_duplicate = raw_sku in seen_skus
                 seen_skus.add(raw_sku)
+                save_sku = raw_sku
                 if is_duplicate:
                     job.conflicts_detected += 1
+                    job.issues_detected += 1
+                    save_sku = f"{raw_sku}-REV{row_num}"
                     add_job_log(job, f"Conflict: Duplicate SKU '{raw_sku}' detected in row {row_num}.", "warning", "conflict")
 
                 # 8. Evidence Mapping
@@ -289,7 +292,7 @@ class CatalogProcessor:
                 # Create Product in DB
                 db_prod = models.Product(
                     workspace_id=job.workspace_id,
-                    sku=raw_sku,
+                    sku=save_sku,
                     name=raw_name,
                     description=desc,
                     manufacturer=mfg,
@@ -352,7 +355,7 @@ class CatalogProcessor:
                     db_issue = models.ReviewIssue(
                         workspace_id=job.workspace_id,
                         product_id=db_prod.id,
-                        issue_type=models.IssueType.CONFLICT,
+                        issue_type=models.IssueType.DUPLICATE,
                         priority=models.IssuePriority.HIGH,
                         status=models.ReviewStatus.OPEN,
                         attribute_key="sku",
@@ -365,7 +368,7 @@ class CatalogProcessor:
                     db_issue = models.ReviewIssue(
                         workspace_id=job.workspace_id,
                         product_id=db_prod.id,
-                        issue_type=models.IssueType.VALIDATION,
+                        issue_type=models.IssueType.INVALID_VALUE,
                         priority=models.IssuePriority.MEDIUM,
                         status=models.ReviewStatus.OPEN,
                         attribute_key="specifications",
