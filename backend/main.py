@@ -130,11 +130,11 @@ def get_workspace_id(
     clean = str(ws).strip()
     return clean if clean else "default"
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def read_root():
     return {"status": "ok", "message": "NEXUS PI Multi-Tenant API is running."}
 
-@app.get("/api/health")
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 def health_check():
     return {
         "status": "healthy",
