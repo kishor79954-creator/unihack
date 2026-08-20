@@ -93,10 +93,18 @@ export default function IngestionPage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await apiFetch("/api/catalog/import", {
+      let res = await apiFetch("/api/catalog/import", {
         method: "POST",
         body: formData,
       });
+
+      // Fallback to /api/products/upload if endpoint returns 404
+      if (res.status === 404) {
+        res = await apiFetch("/api/products/upload", {
+          method: "POST",
+          body: formData,
+        });
+      }
 
       let data: any = {};
       try {
@@ -112,6 +120,15 @@ export default function IngestionPage() {
       if (data.job_id) {
         // Navigate immediately to dedicated real-time processing workspace
         router.push(`/processing/${data.job_id}`);
+        return;
+      } else if (data.product_id) {
+        setUploading(false);
+        setNotification({
+          type: "success",
+          message: `Successfully processed "${file.name}"!`,
+          productId: data.product_id
+        });
+        fetchSources();
         return;
       }
 
