@@ -98,10 +98,15 @@ export default function IngestionPage() {
         body: formData,
       });
 
-      const data = await res.json();
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        data = { error: `Server error (${res.status})` };
+      }
 
       if (!res.ok || data.status === "failed") {
-        throw new Error(data.error || "Failed to initiate catalog processing");
+        throw new Error(data.detail || data.error || data.message || `Server error (${res.status})`);
       }
 
       if (data.job_id) {
@@ -120,7 +125,7 @@ export default function IngestionPage() {
       setNotification({
         type: "error",
         message: isFetchErr 
-          ? "Unable to connect to backend (https://nexus-pi-backend.onrender.com). The cloud service may be waking up from cold sleep. Please retry in a few seconds."
+          ? "Unable to connect to the backend server. If using the cloud version, the service may be warming up. Please retry in a few seconds."
           : `Upload error: ${err.message || "Could not process file"}.`
       });
     }
