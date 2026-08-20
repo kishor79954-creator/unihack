@@ -4,9 +4,9 @@ export function getApiBaseUrl(): string {
   }
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
-    // When running on Vercel, custom domain, or any non-localhost host
+    // When running on Vercel or any non-localhost domain
     if (host !== "localhost" && host !== "127.0.0.1" && !host.startsWith("192.168.") && !host.startsWith("10.")) {
-      return "https://nexus-pi-backend.onrender.com";
+      return "https://warm-spiders-juggle.loca.lt";
     }
   }
   return "http://localhost:8000";
@@ -66,6 +66,9 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
   const headers = new Headers(options.headers || {});
   if (!headers.has("X-Workspace-Id")) {
     headers.set("X-Workspace-Id", wsId);
+  }
+  if (!headers.has("bypass-tunnel-reminder")) {
+    headers.set("bypass-tunnel-reminder", "true");
   }
 
   return fetch(url, {
