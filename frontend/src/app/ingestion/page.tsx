@@ -116,9 +116,12 @@ export default function IngestionPage() {
     } catch (err: any) {
       console.error("Upload error:", err);
       setUploading(false);
+      const isFetchErr = err.message && (err.message.includes("Failed to fetch") || err.message.includes("NetworkError"));
       setNotification({
         type: "error",
-        message: `Failed to process document: ${err.message || "Network or parsing error"}. Please check file format and try again.`
+        message: isFetchErr 
+          ? "Unable to connect to backend (https://nexus-pi-backend.onrender.com). The cloud service may be waking up from cold sleep. Please retry in a few seconds."
+          : `Upload error: ${err.message || "Could not process file"}.`
       });
     }
   };

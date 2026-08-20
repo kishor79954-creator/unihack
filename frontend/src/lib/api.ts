@@ -1,4 +1,18 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+export function getApiBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.trim() !== "") {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
+  }
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    // When running on Vercel, custom domain, or any non-localhost host
+    if (host !== "localhost" && host !== "127.0.0.1" && !host.startsWith("192.168.") && !host.startsWith("10.")) {
+      return "https://nexus-pi-backend.onrender.com";
+    }
+  }
+  return "http://localhost:8000";
+}
+
+export const API_BASE_URL = getApiBaseUrl();
 
 const STORAGE_KEY = "nexus_workspace_id";
 
@@ -45,7 +59,8 @@ export function createNewWorkspace(): string {
  * Enhanced fetch wrapper that automatically routes to API_BASE_URL and injects the private X-Workspace-Id header.
  */
 export async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
-  const url = path.startsWith("http") ? path : `${API_BASE_URL}${path}`;
+  const baseUrl = getApiBaseUrl();
+  const url = path.startsWith("http") ? path : `${baseUrl}${path}`;
   const wsId = getWorkspaceId();
 
   const headers = new Headers(options.headers || {});
