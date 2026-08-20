@@ -345,11 +345,17 @@ export default function ProcessingWorkspace() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* Currently Analyzing Product Card */}
-          <div className="lg:col-span-5 bg-[#111827] border border-[#263449] rounded-xl p-5 space-y-4 flex flex-col justify-between">
-            <div className="space-y-3">
+          <div className="lg:col-span-5 bg-[#111827] border border-[#263449] rounded-xl p-5 space-y-4 flex flex-col justify-between relative overflow-hidden shadow-sm">
+            {/* Animated Laser Scanning Beam */}
+            {isProcessing && (
+              <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#22D3EE] to-transparent shadow-[0_0_12px_#22D3EE] animate-scan pointer-events-none z-10" />
+            )}
+            
+            <div className="space-y-3 relative z-0">
               <div className="flex items-center justify-between border-b border-[#263449] pb-3">
                 <span className="text-[10px] font-bold text-[#667085] uppercase tracking-wider">CURRENTLY ANALYZING</span>
-                <span className="text-[10px] bg-[#3B82F6]/10 text-[#60A5FA] px-2 py-0.5 rounded border border-[#3B82F6]/30 font-semibold">
+                <span className="text-[10px] bg-[#3B82F6]/10 text-[#60A5FA] px-2 py-0.5 rounded border border-[#3B82F6]/30 font-semibold flex items-center gap-1">
+                  {isProcessing && <span className="w-1.5 h-1.5 rounded-full bg-[#22D3EE] animate-ping" />}
                   {job?.current_product?.stage || "Processing"}
                 </span>
               </div>

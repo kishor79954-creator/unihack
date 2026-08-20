@@ -262,7 +262,7 @@ export default function IngestionPage() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={handleBrowseClick}
-              className={`border-2 border-dashed rounded-xl p-10 text-center transition-all bg-[#111827]/50 relative cursor-pointer ${
+              className={`border-2 border-dashed rounded-xl p-10 text-center transition-all bg-[#111827]/50 relative cursor-pointer overflow-hidden ${
                 isDragging 
                   ? "border-[#3B82F6] bg-[#3B82F6]/10 scale-[1.01]" 
                   : "border-[#263449] hover:border-[#3B82F6]/60 hover:bg-[#172033]"
@@ -277,32 +277,64 @@ export default function IngestionPage() {
                 className="hidden"
               />
 
-              <div className="max-w-md mx-auto space-y-4 pointer-events-none">
-                <div className="w-12 h-12 rounded-xl bg-[#3B82F6]/10 border border-[#3B82F6]/30 text-[#60A5FA] flex items-center justify-center mx-auto shadow-xs">
+              {/* Laser Scanning Beam when Uploading */}
+              {uploading && (
+                <div className="absolute inset-x-0 h-[3px] bg-gradient-to-r from-transparent via-[#22D3EE] to-transparent shadow-[0_0_15px_#22D3EE] animate-scan pointer-events-none z-10" />
+              )}
+
+              <div className="max-w-md mx-auto space-y-4 pointer-events-none relative z-0">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto shadow-md transition-all ${
+                  uploading 
+                    ? "bg-[#3B82F6]/20 border border-[#3B82F6] text-[#60A5FA] ring-4 ring-[#3B82F6]/20 glow-active" 
+                    : "bg-[#3B82F6]/10 border border-[#3B82F6]/30 text-[#60A5FA]"
+                }`}>
                   {uploading ? (
-                    <RefreshCw className="w-6 h-6 animate-spin text-[#3B82F6]" />
+                    <RefreshCw className="w-7 h-7 animate-spin text-[#22D3EE]" />
                   ) : (
-                    <Upload className="w-6 h-6" />
+                    <Upload className="w-7 h-7" />
                   )}
                 </div>
                 
-                <div>
-                  <h3 className="text-sm font-bold text-[#F3F6FA]">
-                    {uploading ? "Extracting Specifications..." : "Drop technical documents or catalog files here"}
+                <div className="space-y-1.5">
+                  <h3 className="text-sm font-bold text-[#F3F6FA] flex items-center justify-center gap-2">
+                    {uploading ? (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-[#22D3EE] animate-ping" />
+                        <span>Extracting Product Intelligence...</span>
+                      </>
+                    ) : (
+                      "Drop technical documents or catalog files here"
+                    )}
                   </h3>
-                  <p className="text-xs text-[#A8B3C2] mt-1">
+                  <p className="text-xs text-[#A8B3C2]">
                     {uploading ? uploadProgress : "Supports PDF engineering datasheets, CSV product matrices, and JSON catalogs."}
                   </p>
                 </div>
+
+                {uploading && (
+                  <div className="w-full bg-[#070B12] rounded-full h-2 border border-[#263449] overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-[#3B82F6] via-[#22D3EE] to-[#22C55E] animate-pulse rounded-full w-full" />
+                  </div>
+                )}
 
                 <div className="pt-2 pointer-events-auto">
                   <button
                     type="button"
                     onClick={handleBrowseClick}
                     disabled={uploading}
-                    className="px-4 py-2 bg-[#3B82F6] hover:bg-[#1D4ED8] disabled:bg-[#263449] text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
+                    className="px-5 py-2.5 bg-[#3B82F6] hover:bg-[#1D4ED8] disabled:bg-[#263449] text-white rounded-lg text-xs font-bold shadow-md transition-all flex items-center gap-2 mx-auto"
                   >
-                    {uploading ? "Processing..." : "Browse Files"}
+                    {uploading ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Processing Catalog...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Browse Files</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

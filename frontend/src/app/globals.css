@@ -114,3 +114,34 @@
   font-size: 0.875rem;
   border-bottom: 1px solid var(--border);
 }
+
+@keyframes scanBeam {
+  0% {
+    top: 0%;
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0.2;
+  }
+}
+
+.animate-scan {
+  animation: scanBeam 2.5s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(34, 211, 238, 0.7);
+  }
+}
+
+.glow-active {
+  animation: pulseGlow 2s infinite;
+}
